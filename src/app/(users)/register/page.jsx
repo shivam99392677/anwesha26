@@ -6,7 +6,7 @@ import Step2 from "./Step2Personal";
 import Step3 from "./Step3College";
 import Step4 from "./Step4Preview";
 import Step5 from "./Step5Success";
-import { useAuthUser } from "../../context/AuthUserContext";
+import { useAuthUser } from "../../../context/AuthUserContext";
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
