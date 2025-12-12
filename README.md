@@ -6,7 +6,7 @@ IIT Patna’s own cultural-management fest - Anwesha is back on track this year 
 This is a **[Next.js](https://nextjs.org/)** project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 Beginner to intermediate levels of knowledge in **HTML**, **CSS** and **Javascript** would be enough to contribute to most of the issues in this project.
 
-
+ 
 ## 🤝 Contributing
 1. Create a fork of this repository
 2. Clone the forked repository on your local device `git clone https://github.com/<your-username>/frontend.git`

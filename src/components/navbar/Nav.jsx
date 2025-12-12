@@ -28,7 +28,6 @@ function Navigation() {
 
   const toggleInput = useStateMachineInput(rive, STATE_MACHINE_NAME, INPUT_NAME);
   const refNav = useRef(null);
-  
 
   useEffect(() => closeDrawer(), [pathname]);
 
@@ -78,30 +77,6 @@ function Navigation() {
     closeDrawer();
     toast.success("Logged out!");
   };
-  const [showDropdown, setShowDropdown] = useState(false);
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
-  };
-
-
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    if (!showDropdown) return;
-
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [showDropdown]);
-  
 
   return (
     <>
@@ -135,14 +110,14 @@ function Navigation() {
         </div>
 
         {/* Desktop Action Buttons */}
-        <div className={cn(styles.navEnds, "mr-14")} >
+        <div className={styles.navEnds}>
           <button className={cn(styles.sexy_button, styles.sexy_button_small)}
             onClick={() => router.push("/anweshapass")}>
             GET PASSES
           </button>
 
           {/* Show Admin Panel + Editor Panel like GET PASSES */}
-          {/* {currentUser?.role === "admin" && (
+          {currentUser?.role === "admin" && (
             <>
               <button className={cn(styles.sexy_button, styles.sexy_button_small)}
                 onClick={() => router.push("/admin")}>
@@ -161,70 +136,23 @@ function Navigation() {
               onClick={() => router.push("/editor")}>
               EDITOR PANEL
             </button>
-          )} */}
+          )}
 
-      <div className="relative"  ref={dropdownRef}>
-      <button className={cn(styles.sexy_button, styles.sexy_button_small)}
+          <button className={cn(styles.sexy_button, styles.sexy_button_small)}
             onClick={() =>
-              
               currentUser
-                ? toggleDropdown()
+                ? router.push("/profile")
                 : router.push(`/login?from=${encodeURIComponent(pathname)}`)
             }>
-
             {!currentUser ? "LOGIN" : "PROFILE"}
           </button>
 
-          {showDropdown && (
-            <ul className="absolute rounded-2xl px-4 text-white bg-black mt-3 py-2  shadow-md">
-              
-              <li>       {currentUser?.role === "admin" && (
-            <>
-               <button className="text-white text-nowrap w-full text-left cursor-pointer border-2 border-black bg-gray-800 mt-2  px-4 py-2 hover:bg-gray-500 rounded-xl"
-
-                onClick={() => 
-                  {
-                    setShowDropdown(false);
-                    router.push("/admin")}}>
-                ADMIN PANEL
-              </button>
-
-              <button className="text-white text-nowrap w-full text-left cursor-pointer border-2 border-black bg-gray-800 my-2  px-4 py-2 hover:bg-gray-500 rounded-xl"
-                onClick={() =>{
-                  setShowDropdown(false);
-                  router.push("/editor")}}>
-                EDITOR PANEL
-              </button>
-            </>
-          )}</li>
-
-          <li>{currentUser?.role === "editor" && (
-            <button className="text-white text-nowrap w-full text-left px-4 py-2 hover:bg-gray-700 rounded"
-              onClick={() =>{ router.push("/editor")}}>
-              EDITOR PANEL
-            </button>
-          )}
-          </li>
-           
-          <li>
-              {currentUser && (
-            
-            <button className="text-white text-nowrap w-full text-center cursor-pointer border-2 border-black bg-gray-800 mb-2  px-4 py-2 hover:bg-red-500 rounded-xl"
-            onClick={handleLogout}>
-                  LOGOUT
-                </button>
-               
-              )} </li>
-            </ul>
-          )}
-      </div>
-
-          {/* {currentUser && (
+          {currentUser && (
             <button className={cn(styles.sexy_button, styles.sexy_button_small)}
               onClick={handleLogout}>
               LOGOUT
             </button>
-          )} */}
+          )}
         </div>
       </div>
 
