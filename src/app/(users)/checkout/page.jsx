@@ -63,7 +63,7 @@ export default function CheckoutPage() {
                 const data = await verify.json();
 
                 if (data.success) {
-                    await processItemsAfterPayment(cart, currentUser.uid, response.razorpay_order_id);
+                    await processItemsAfterPayment(cart, currentUser.uid, response.razorpay_order_id,response.razorpay_payment_id);
                     emptyCart();
                     toast.success("Payment Successful!");
                     return router.push("/orders");
@@ -77,11 +77,11 @@ export default function CheckoutPage() {
         razor.open();
     };
 
-    const processItemsAfterPayment = async (items, uid, orderId) => {
+    const processItemsAfterPayment = async (items, uid, orderId,paymentId) => {
         await fetch("/api/razorpay/process-items", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uid, items, orderId }),
+            body: JSON.stringify({ uid, items, orderId ,paymentId}),
         });
     };
 

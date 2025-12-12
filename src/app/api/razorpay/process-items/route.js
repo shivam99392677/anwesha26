@@ -9,7 +9,7 @@ import { db } from "../../../../lib/firebaseConfig";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { items, uid ,orderId} = body;
+    const { items, uid ,orderId,paymentId} = body;
 
     for (const item of items) {
 
@@ -32,6 +32,8 @@ export async function POST(req) {
           date: item.date,
           eventCategory: item.eventCategory,
           createdAt: serverTimestamp(),
+          orderId : orderId,
+          paymentId: paymentId,
         });
       }
 
@@ -55,6 +57,8 @@ export async function POST(req) {
           eventCategory: item.eventCategory,
           city: item.city,
           date: item.date,
+          orderId : orderId,
+          paymentId: paymentId,
           createdAt: serverTimestamp(),
         });
       }
@@ -67,6 +71,8 @@ export async function POST(req) {
         await setDoc(ref, {
           uid,
           productId: item.id,
+          orderId : orderId,
+          paymentId: paymentId,
           productName: item.name,
           createdAt: serverTimestamp(),
         });

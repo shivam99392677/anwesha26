@@ -112,8 +112,8 @@ export default function AllUsersPage() {
       querySnapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
         tableRows.push([
-          data.firstName || '',
-          data.lastName || '',
+          data.personal.firstName || '',
+          data.personal.lastName || '',
           data.email || '',
           data.anweshaId || 'N/A',
           data.role || 'user',
@@ -198,7 +198,7 @@ export default function AllUsersPage() {
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                   <td className="p-6">
-                    <div className="font-bold text-white text-base">{user.firstName} {user.lastName}</div>
+                    <div className="font-bold text-white text-base">{user.personal.firstName} {user.personal.lastName}</div>
                     <div className="text-slate-500 text-xs mt-0.5">{user.email}</div>
                   </td>
                   <td className="p-6 font-mono text-blue-400">
