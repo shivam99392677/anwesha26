@@ -15,75 +15,45 @@ export default function CheckoutPage() {
     const isEvent = eventItems.length > 0;
 
     // ---------------------- PAYMENT HANDLER (unchanged logic) ----------------------
-    const handlePayment = async () => {
-        if (!currentUser?.uid) return toast.error("User not logged in!");
-        if (!cart.length) return toast.error("Cart is empty!");
+const handlePayment = async () => {
+  if (!currentUser?.uid) return toast.error("User not logged in!");
+  if (!cart.length) return toast.error("Cart is empty!");
 
-        if (totalPrice() === 0) {
-            // await saveFreeRegistrations();
-            // emptyCart();
-            toast.success("Some Error !");
-            return router.push("/orders");
-        }
+  const res = await fetch("/api/ntt/create-transaction", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      uid: currentUser.uid,
+      name: currentUser.personal.firstName + " "+ currentUser.personal.lastName,
+      email : currentUser.email,
+      items: cart,
+      amount: totalPrice(),
+    }),
+  });
 
-        if (!window.Razorpay) return toast.error("Payment SDK missing.");
+  const data = await res.json();
 
-        const res = await fetch("/api/razorpay/create-order", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: totalPrice() }),
-        });
+  if (!data.success) {
+    return toast.error("Payment initiation failed");
+  }
 
-        if (!res.ok) return toast.error("Order creation failed");
+  // 🔥 Redirect using form POST
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = data.paymentUrl;
 
-        const order = await res.json();
+  Object.entries(data.payload).forEach(([key, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
 
-        const razor = new window.Razorpay({
-            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
-            amount: order.amount,
-            currency: "INR",
-            name: "Anwesha",
-            description: isEvent ? "Event Registration" : "Store Checkout",
-            order_id: order.id,
+  document.body.appendChild(form);
+  form.submit();
+};
 
-            handler: async (response) => {
-                const verify = await fetch("/api/razorpay/verify-payment", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        uid: currentUser?.uid,
-                        items: cart,
-                        totalAmount: totalPrice(),
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature,
-                    }),
-                });
-
-                const data = await verify.json();
-
-                if (data.success) {
-                    await processItemsAfterPayment(cart, currentUser.uid, response.razorpay_order_id,response.razorpay_payment_id);
-                    emptyCart();
-                    toast.success("Payment Successful!");
-                    return router.push("/orders");
-                }
-                toast.error("Payment verification failed.");
-            },
-
-            theme: { color: "#E63946" },
-        });
-
-        razor.open();
-    };
-
-    const processItemsAfterPayment = async (items, uid, orderId,paymentId) => {
-        await fetch("/api/razorpay/process-items", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uid, items, orderId ,paymentId}),
-        });
-    };
 
     // const saveFreeRegistrations = async (items, uid, orderId) => {
     //     await fetch("/api/razorpay/free-event-register", {
