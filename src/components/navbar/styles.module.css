@@ -145,9 +145,20 @@
     padding-bottom: 6px;
     border: none;
 }
-.mobile_only {
+/* .mobile_only {
     display: none;
+    align-items: center;
+    gap: 14px;
 }
+
+
+@media screen and (max-width: 1050px) {
+    .mobile_only {
+        display: flex;  
+        flex-direction: row;
+    }
+} */
+
 
 .nav_drawer {
     display: none;

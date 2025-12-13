@@ -9,7 +9,7 @@ import { db } from "../../../../lib/firebaseConfig";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { items, uid ,orderId,paymentId} = body;
+    const {uid, items ,orderId,paymentId} = body;
 
     for (const item of items) {
 

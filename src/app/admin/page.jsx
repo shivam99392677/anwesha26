@@ -24,7 +24,7 @@ export default function AdminDashboard() {
         // 1. Define Collections
         const usersColl = collection(db, "users");
         const eventsColl = collection(db, "events");
-        const ordersColl = collection(db, "orders");
+        const ordersColl = collection(db, "payments");
         const productsColl = collection(db, "products");
 
         // 2. Fetch Counts in Parallel
@@ -72,6 +72,7 @@ export default function AdminDashboard() {
   const stats = [
     { 
       label: "Total Users", 
+      url:"/admin/all-users",
       value: statsData.users.toLocaleString(), 
       color: "text-blue-400", 
       bg: "bg-blue-500/10",
@@ -80,6 +81,7 @@ export default function AdminDashboard() {
     },
     { 
       label: "Total Events", 
+      url:"/admin/all-events",
       value: statsData.events.toLocaleString(), 
       color: "text-purple-400", 
       bg: "bg-purple-500/10",
@@ -87,7 +89,8 @@ export default function AdminDashboard() {
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> 
     },
     { 
-      label: "Total Orders", 
+      label: "Total Payments", 
+      url:"/admin/all-payments",
       value: statsData.orders.toLocaleString(), 
       color: "text-emerald-400", 
       bg: "bg-emerald-500/10",
@@ -95,7 +98,8 @@ export default function AdminDashboard() {
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> 
     },
     { 
-      label: "Total Products", 
+      label: "Total Products",
+      url:"/admin/all-products",
       value: statsData.products.toLocaleString(), 
       color: "text-rose-400", 
       bg: "bg-rose-500/10",
@@ -145,7 +149,7 @@ export default function AdminDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl hover:border-slate-600 transition-all duration-300 group">
+            <Link href={stat.url} key={index} className="bg-slate-900/60 backdrop-blur-md border border-slate-800 p-6 rounded-2xl shadow-xl hover:border-slate-600 transition-all duration-300 group">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
@@ -155,7 +159,7 @@ export default function AdminDashboard() {
                   {stat.icon}
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -186,7 +190,7 @@ export default function AdminDashboard() {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="text-sm text-slate-200 font-medium group-hover:text-white transition-colors">
-                              <span className="font-bold">{user.firstName} {user.lastName}</span> joined from <span className="text-blue-400">{user.college?.name || "Unknown"}</span>
+                              <span className="font-bold">{user.personal.firstName} {user.personal.lastName}</span> joined from <span className="text-blue-400">{user.college?.name || "Unknown"}</span>
                           </p>
                           <p className="text-xs text-slate-500 mt-1 font-mono">
                               {user.email}
