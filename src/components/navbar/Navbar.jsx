@@ -179,6 +179,17 @@ function Navigation() {
                       Profile
                     </button>
                   </li>
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/orders");
+                      }}
+                    >
+                     Orders
+                    </button>
+                  </li>
 
                   {/* ADMIN */}
                   {currentUser?.role === "admin" && (

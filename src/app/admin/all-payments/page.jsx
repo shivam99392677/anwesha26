@@ -40,6 +40,21 @@ export default function AllPaymentsPage() {
   const searchParams = useSearchParams();
   const paymentIdFromURL = searchParams.get("paymentId");
 
+  const formatDate = (ts) => {
+  if (!ts) return "N/A";
+
+  const date = ts.toDate ? ts.toDate() : new Date(ts);
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+
   useEffect(() => {
     if (paymentIdFromURL) {
       fetchSinglePayment(paymentIdFromURL);
@@ -59,15 +74,18 @@ export default function AllPaymentsPage() {
         const paymentData = snapshot.data();
 
         // Fetch user data
-        const userRef = doc(db, "users", paymentData.userId);
-        const userSnap = await getDoc(userRef);
+        // const userRef = doc(db, "users", paymentData.userId);
+        // const userSnap = await getDoc(userRef);
 
-        const userData = userSnap.exists() ? userSnap.data() : {};
+        // const userData = userSnap.exists() ? userSnap.data() : {};
 
         setPayments([
           {
             id: snapshot.id,
-            userName: (userData.firstName || "") + " " + (userData.lastName || ""),
+            // userName: (userData.firstName || "") + " " + (userData.lastName || ""),
+            userName : paymentData.name,
+            userEmail : paymentData.email,
+            Date: formatDate(paymentData.createdAt),
             ...paymentData,
           },
         ]);
@@ -98,12 +116,15 @@ export default function AllPaymentsPage() {
         const data = docSnap.data();
 
         // Fetch user profile for each payment
-        const userSnap = await getDoc(doc(db, "users", data.userId));
-        const userData = userSnap.exists() ? userSnap.data() : {};
+        // const userSnap = await getDoc(doc(db, "users", data.userId));
+        // const userData = userSnap.exists() ? userSnap.data() : {};
 
         paymentList.push({
           id: docSnap.id,
-          userName: (userData.firstName || "") + " " + (userData.lastName || ""),
+          // userName: (userData.firstName || "") + " " + (userData.lastName || ""),
+          userName : data.name,
+          userEmail:data.email,
+          Date: formatDate(data.createdAt),
           ...data,
         });
       }
@@ -145,12 +166,15 @@ export default function AllPaymentsPage() {
       const paymentList = [];
       for (let docSnap of snapshot.docs) {
         const data = docSnap.data();
-        const userSnap = await getDoc(doc(db, "users", data.userId));
-        const userData = userSnap.exists() ? userSnap.data() : {};
+        // const userSnap = await getDoc(doc(db, "users", data.userId));
+        // const userData = userSnap.exists() ? userSnap.data() : {};
 
         paymentList.push({
           id: docSnap.id,
-          userName: (userData.firstName || "") + " " + (userData.lastName || ""),
+          userName: data.name,
+          userEmail : data.email,
+          Date: formatDate(data.createdAt),
+          // userName: (userData.firstName || "") + " " + (userData.lastName || ""),
           ...data,
         });
       }
@@ -187,12 +211,15 @@ export default function AllPaymentsPage() {
       const paymentList = [];
       for (let docSnap of snapshot.docs) {
         const data = docSnap.data();
-        const userSnap = await getDoc(doc(db, "users", data.userId));
-        const userData = userSnap.exists() ? userSnap.data() : {};
+        // const userSnap = await getDoc(doc(db, "users", data.userId));
+        // const userData = userSnap.exists() ? userSnap.data() : {};
 
         paymentList.push({
           id: docSnap.id,
-          userName: (userData.firstName || "") + " " + (userData.lastName || ""),
+          userName: userAgent.name,
+          userEmail: data.email,
+          Date: formatDate(data.createdAt),
+          // userName: (userData.firstName || "") + " " + (userData.lastName || ""),
           ...data,
         });
       }
@@ -225,16 +252,18 @@ export default function AllPaymentsPage() {
         const data = snap.data();
 
         rows.push([
+          data.email,
+          data.name,
           data.paymentId,
-          data.orderId,
-          data.status,
           data.totalAmount,
-          data.userId
+           data.status,
+           formatDate(data.createdAt),
+
         ]);
       }
 
       autoTable(docFile, {
-        head: [["Payment ID", "Order ID", "Status", "Amount", "User ID"]],
+        head: [["Email","Name", "Payment ID", "Amount", "Status","Date"]],
         body: rows,
         startY: 30,
       });
@@ -282,9 +311,11 @@ export default function AllPaymentsPage() {
             <tr className="text-xs uppercase text-slate-500 border-b border-slate-700">
               <th className="p-3">Payment ID</th>
               <th className="p-3">Order ID</th>
-              <th className="p-3">User</th>
+              <th className="p-3">UserName</th>
+              <th className="p-3">UserEmail</th>
               <th className="p-3">Amount</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Date</th>
             </tr>
           </thead>
           <tbody>
@@ -293,6 +324,7 @@ export default function AllPaymentsPage() {
                 <td className="p-3 font-mono text-blue-400">{p.paymentId}</td>
                 <td className="p-3">{p.orderId}</td>
                 <td className="p-3">{p.userName || "Unknown User"}</td>
+                <td className="p-3">{p.userEmail || "Unknown Email"}</td>
                 <td className="p-3 font-bold text-green-400">₹{p.totalAmount}</td>
                 <td className="p-3">
                   <span
@@ -301,6 +333,7 @@ export default function AllPaymentsPage() {
                     {p.status}
                   </span>
                 </td>
+                <td className="p-3">{p.Date || "Unknown Date"}</td>
               </tr>
             ))}
           </tbody>

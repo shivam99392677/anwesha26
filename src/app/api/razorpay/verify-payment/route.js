@@ -24,6 +24,8 @@ export async function POST(req) {
 
     await setDoc(doc(db, "payments", body.razorpay_payment_id), {
       userId: body.uid,
+      email:body.email,
+      name: body.name,
       items: body.items,
       totalAmount: body.totalAmount,
       orderId: body.razorpay_order_id,

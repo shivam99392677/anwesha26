@@ -68,9 +68,7 @@ export default function StoreOrdersPage() {
             paymentId: order.paymentId || "N/A",
             date: order.createdAt?.toDate().toLocaleString() || "N/A",
             uid: order.uid,
-            userName: userData.personal
-              ? `${userData.personal.firstName} ${userData.personal.lastName}`
-              : userData.name || "Unknown User",
+            userName: order.name || "Unknown User",
             college: userData.college?.name || userData.college || "Unknown",
           });
         }
