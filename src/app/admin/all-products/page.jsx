@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'; 
+import { collection, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore'; 
 import { db } from '@/lib/firebaseConfig'; 
 import Link from 'next/link';
 
@@ -9,12 +9,16 @@ export default function AllProductsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // Editing State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
   // 1. Fetch Products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "products"));
-        // Map data to match your schema (name, cost, stock, img_src)
         const productList = querySnapshot.docs.map(doc => ({ 
           id: doc.id, 
           ...doc.data() 
@@ -28,6 +32,14 @@ export default function AllProductsPage() {
     };
     fetchProducts();
   }, []);
+
+  // Sync state when a product is selected
+  useEffect(() => {
+    if (selectedProduct) {
+      setEditForm(selectedProduct);
+      // Note: We removed setIsEditing(false) from here so we can control it via the button clicks
+    }
+  }, [selectedProduct]);
 
   // 2. Delete Function
   const handleDelete = async (e, id) => {
@@ -44,7 +56,47 @@ export default function AllProductsPage() {
     }
   };
 
-  // Badge Logic for Product Type/Stock
+  // 3. Direct Edit Handler (New)
+  const handleDirectEdit = (e, product) => {
+    e.stopPropagation(); // Stop clicking the card background
+    setIsEditing(true);  // Set mode to Edit
+    setSelectedProduct(product); // Open Modal
+  };
+
+  // 4. Update Function
+  const handleUpdate = async () => {
+    setIsSaving(true);
+    try {
+      const productRef = doc(db, "products", selectedProduct.id);
+      
+      const updatedData = {
+        ...editForm,
+        cost: Number(editForm.cost),
+        stock: Number(editForm.stock)
+      };
+
+      await updateDoc(productRef, updatedData);
+
+      setProducts(prev => prev.map(p => p.id === selectedProduct.id ? updatedData : p));
+      setSelectedProduct(updatedData);
+      setIsEditing(false);
+      alert("Product updated successfully!");
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert("Failed to update product.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
   const getStockBadge = (stock) => {
     if (stock > 50) return "bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]";
     if (stock > 0) return "bg-yellow-500/10 text-yellow-400 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.3)]";
@@ -76,11 +128,13 @@ export default function AllProductsPage() {
       {/* CARDS GRID */}
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         
-        {/* Render Existing Products */}
         {products.map((product) => (
           <div 
             key={product.id} 
-            onClick={() => setSelectedProduct(product)}
+            onClick={() => {
+                setIsEditing(false); // Default to View Mode when clicking card body
+                setSelectedProduct(product);
+            }}
             className="group relative bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] cursor-pointer"
           >
             {/* Image Container */}
@@ -92,14 +146,12 @@ export default function AllProductsPage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
               
-              {/* Type Badge */}
               <div className="absolute top-4 left-4">
-                 <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border bg-slate-950/50 backdrop-blur border-white/20 text-white">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border bg-slate-950/50 backdrop-blur border-white/20 text-white">
                     {product.type || "Merch"}
-                 </span>
+                  </span>
               </div>
 
-              {/* Stock Badge */}
               <div className="absolute top-4 right-4">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border ${getStockBadge(product.stock)}`}>
                     {product.stock > 0 ? `${product.stock} In Stock` : 'Out of Stock'}
@@ -126,18 +178,34 @@ export default function AllProductsPage() {
                     </span>
                 </div>
                 
-                <button 
-                  onClick={(e) => handleDelete(e, product.id)}
-                  className="text-slate-600 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-white/5 group-hover:opacity-100 opacity-0 group-hover:translate-x-0 translate-x-4 transition-all duration-300"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
+                {/* --- ACTION BUTTONS (Edit & Delete) --- */}
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                    
+                    {/* EDIT BUTTON (New) */}
+                    <button 
+                      onClick={(e) => handleDirectEdit(e, product)}
+                      className="text-slate-500 hover:text-blue-400 transition-colors p-2 rounded-full hover:bg-white/5"
+                      title="Edit Product"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+
+                    {/* DELETE BUTTON */}
+                    <button 
+                      onClick={(e) => handleDelete(e, product.id)}
+                      className="text-slate-500 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-white/5"
+                      title="Delete Product"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+
               </div>
             </div>
           </div>
         ))}
 
-        {/* --- ADD PRODUCT CARD --- */}
+        {/* ADD PRODUCT CARD */}
         <Link 
             href="/admin/upload-products"
             className="group relative h-full min-h-[400px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 hover:border-blue-500 bg-white/5 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm cursor-pointer"
@@ -153,7 +221,7 @@ export default function AllProductsPage() {
 
       </div>
 
-      {/* PRODUCT DETAIL MODAL */}
+      {/* PRODUCT DETAIL / EDIT MODAL */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedProduct(null)} />
@@ -165,47 +233,166 @@ export default function AllProductsPage() {
             </button>
 
             <div className="grid md:grid-cols-2">
-              {/* Left: Image */}
+              
+              {/* Left: Image (Display Only for now, URL edit in text) */}
               <div className="relative h-64 md:h-auto min-h-[400px] bg-slate-800">
-                <img src={selectedProduct.img_src} className="w-full h-full object-cover" alt="" />
+                <img src={isEditing ? editForm.img_src : selectedProduct.img_src} className="w-full h-full object-cover" alt="" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent md:bg-gradient-to-r" />
-                <div className="absolute bottom-6 left-6 right-6">
-                   <h2 className="text-3xl font-black text-white leading-tight mb-2">{selectedProduct.name}</h2>
-                   <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStockBadge(selectedProduct.stock)}`}>
-                      {selectedProduct.stock} Units Remaining
-                   </span>
-                </div>
+                
+                {isEditing && (
+                    <div className="absolute bottom-4 left-4 right-4 bg-slate-950/80 backdrop-blur p-4 rounded-xl border border-white/10">
+                         <label className="text-xs font-bold text-blue-400 uppercase">Image URL</label>
+                         <input 
+                            name="img_src"
+                            value={editForm.img_src}
+                            onChange={handleInputChange}
+                            className="w-full bg-slate-900 text-white text-sm border-none focus:ring-1 focus:ring-blue-500 rounded mt-1 px-2 py-1"
+                         />
+                    </div>
+                )}
+
+                {!isEditing && (
+                    <div className="absolute bottom-6 left-6 right-6">
+                        <h2 className="text-3xl font-black text-white leading-tight mb-2">{selectedProduct.name}</h2>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStockBadge(selectedProduct.stock)}`}>
+                        {selectedProduct.stock} Units Remaining
+                        </span>
+                    </div>
+                )}
               </div>
 
-              {/* Right: Info */}
+              {/* Right: Info / Edit Form */}
               <div className="p-8 space-y-6 flex flex-col justify-center">
-                <div>
-                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Description</h3>
-                    <p className="text-slate-300 text-lg leading-relaxed">{selectedProduct.description || "No description provided."}</p>
-                </div>
+                
+                {isEditing ? (
+                  // --- EDIT MODE FORM ---
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-xl font-bold text-white">Edit Product</h3>
+                        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/30">Editing Mode</span>
+                     </div>
+                     
+                     {/* Name */}
+                     <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Product Name</label>
+                        <input 
+                            name="name"
+                            value={editForm.name}
+                            onChange={handleInputChange}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                     </div>
 
-                <div className="grid grid-cols-2 gap-4 py-6 border-y border-white/10">
-                  <div>
-                    <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Product ID</span>
-                    <span className="text-slate-200 font-mono text-sm">{selectedProduct.id}</span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Status</span>
-                    <span className={`font-bold ${selectedProduct.active ? 'text-green-400' : 'text-red-400'}`}>
-                        {selectedProduct.active ? 'Active & Visible' : 'Hidden from Store'}
-                    </span>
-                  </div>
-                </div>
+                     {/* Description */}
+                     <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">Description</label>
+                        <textarea 
+                            name="description"
+                            value={editForm.description}
+                            onChange={handleInputChange}
+                            rows="3"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                     </div>
 
+                     <div className="grid grid-cols-2 gap-4">
+                        {/* Cost */}
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">Price (₹)</label>
+                            <input 
+                                name="cost"
+                                type="number"
+                                value={editForm.cost}
+                                onChange={handleInputChange}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        {/* Stock */}
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">Stock</label>
+                            <input 
+                                name="stock"
+                                type="number"
+                                value={editForm.stock}
+                                onChange={handleInputChange}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                     </div>
+                     
+                     <div className="flex items-center gap-3 pt-2">
+                        <input 
+                            type="checkbox" 
+                            name="active" 
+                            checked={editForm.active}
+                            onChange={handleInputChange}
+                            id="activeCheck"
+                            className="w-5 h-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="activeCheck" className="text-sm font-bold text-white select-none">
+                            Product Visible in Store
+                        </label>
+                     </div>
+
+                  </div>
+                ) : (
+                  // --- VIEW MODE ---
+                  <>
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Description</h3>
+                        <p className="text-slate-300 text-lg leading-relaxed">{selectedProduct.description || "No description provided."}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 py-6 border-y border-white/10">
+                        <div>
+                        <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Product ID</span>
+                        <span className="text-slate-200 font-mono text-sm">{selectedProduct.id}</span>
+                        </div>
+                        <div>
+                        <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Status</span>
+                        <span className={`font-bold ${selectedProduct.active ? 'text-green-400' : 'text-red-400'}`}>
+                            {selectedProduct.active ? 'Active & Visible' : 'Hidden from Store'}
+                        </span>
+                        </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Bottom Actions */}
                 <div className="flex items-center justify-between pt-2">
-                  <div>
-                    <span className="block text-sm text-slate-500 uppercase tracking-widest">Price</span>
-                    <span className="text-4xl font-bold text-emerald-400">₹{selectedProduct.cost}</span>
-                  </div>
-                  <button className="bg-white text-black px-8 py-3 rounded-xl font-bold hover:bg-blue-400 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-                    Edit Details
-                  </button>
+                  {!isEditing && (
+                    <div>
+                        <span className="block text-sm text-slate-500 uppercase tracking-widest">Price</span>
+                        <span className="text-4xl font-bold text-emerald-400">₹{selectedProduct.cost}</span>
+                    </div>
+                  )}
+
+                  {isEditing ? (
+                    <div className="flex w-full gap-3">
+                        <button 
+                            onClick={() => setIsEditing(false)}
+                            className="flex-1 bg-slate-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleUpdate}
+                            disabled={isSaving}
+                            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-500 transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-50"
+                        >
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                  ) : (
+                    <button 
+                        onClick={() => setIsEditing(true)}
+                        className="bg-white text-black px-8 py-3 rounded-xl font-bold hover:bg-blue-400 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                    >
+                        Edit Details
+                    </button>
+                  )}
                 </div>
+
               </div>
             </div>
           </div>
