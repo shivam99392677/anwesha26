@@ -69,13 +69,73 @@ export default function VerifyQr() {
     }
   };
 
-  const handleDecoded = (decodedText) => {
+  const handleDecoded = async (decodedText) => {
     setQrInput(decodedText);
     const result = decodeQrPayload(decodedText);
+
     if (result) {
+      // 1. Initial success with static QR data
       setDecodedData({ ...result, qrPayload: decodedText });
       setError("");
       toast.success("QR Verified Successfully!");
+
+      // 2. Fetch latest status from DB using Anwesha ID
+      if (result.anweshaId) {
+        setLoading(true);
+        try {
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("anweshaId", "==", result.anweshaId));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0].data();
+
+            // Helper to safely extract string
+            const safeString = (val) => {
+              if (!val) return "";
+              if (typeof val === "string") return val;
+              if (typeof val === "object") {
+                return val.name || val.fullName || val.phone || val.phoneNumber || val.value || JSON.stringify(val);
+              }
+              return String(val);
+            };
+
+            // Merge DB data with QR data (DB takes precedence for dynamic fields)
+            const updatedData = {
+              uid: querySnapshot.docs[0].id, // Store UID for updates
+              anweshaId: safeString(userDoc.anweshaId),
+              firstName: safeString(userDoc.personal?.firstName + " " + userDoc.personal?.lastName || "N/A"),
+              lastName: "",
+              email: safeString(userDoc.email),
+              contact: safeString(userDoc.contact || userDoc.personal?.phoneNumber),
+              college: safeString(userDoc.college),
+              dob: safeString(userDoc.personal?.dob),
+              gender: safeString(userDoc.personal?.gender),
+              // Add extra fields from DB
+              isDbResult: true,
+              paymentStatus: safeString(userDoc.paymentStatus || "Unknown"),
+              currentStatus: safeString(userDoc.movementStatus || "N/A"),
+              history: (userDoc.movementHistory || []).sort((a, b) => {
+                const timeA = a.timestamp?.seconds ? a.timestamp.seconds : 0;
+                const timeB = b.timestamp?.seconds ? b.timestamp.seconds : 0;
+                return timeB - timeA;
+              }),
+              qrPayload: decodedText
+            };
+
+            setDecodedData(updatedData);
+            setMovementStatus(userDoc.movementStatus || "");
+            toast.success("Synced with Database");
+          }
+        } catch (dbErr) {
+          console.error("Failed to fetch fresh status:", dbErr);
+          // Don't clear decodedData, just warn
+          toast.error("Could not fetch latest movement status");
+        } finally {
+          setLoading(false);
+        }
+      }
+
     } else {
       setDecodedData(null);
       setError("Invalid or tampered QR payload!");
@@ -150,8 +210,8 @@ export default function VerifyQr() {
         // Generate QR Payload for searched user
         const userForQr = {
           anweshaId: userData.anweshaId,
-          firstName: safeString(userDoc.personal?.firstName),
-          lastName: safeString(userDoc.personal?.lastName),
+          firstName: safeString(userDoc.personal?.firstName + " " + userDoc.personal?.lastName || "N/A"),
+          lastName: "",
           email: userData.email,
           contact: userData.contact,
           college: userData.college,
