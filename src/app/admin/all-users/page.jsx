@@ -10,6 +10,9 @@ import autoTable from 'jspdf-autotable';
 
 export default function AllUsersPage() {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]); // ✅ NEW: State for search results
+  const [searchTerm, setSearchTerm] = useState('');     // ✅ NEW: Search text state
+  
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -20,11 +23,33 @@ export default function AllUsersPage() {
   const [isLastPage, setIsLastPage] = useState(false);
   const [pageHistory, setPageHistory] = useState([]);
   
-  const USERS_PER_PAGE = 10;
+  const USERS_PER_PAGE = 20; // Increased slightly for better searching experience
 
   useEffect(() => {
     fetchFirstPage();
   }, []);
+
+  // ✅ NEW: Filter Logic
+  useEffect(() => {
+    if (searchTerm === '') {
+      setFilteredUsers(users);
+    } else {
+      const lowerSearch = searchTerm.toLowerCase();
+      const filtered = users.filter(user => {
+        const fullName = `${user.personal?.firstName || ''} ${user.personal?.lastName || ''}`.toLowerCase();
+        const email = (user.email || '').toLowerCase();
+        const aid = (user.anweshaId || '').toLowerCase();
+        const role = (user.role || '').toLowerCase();
+        
+        return fullName.includes(lowerSearch) || 
+               email.includes(lowerSearch) || 
+               aid.includes(lowerSearch) || 
+               role.includes(lowerSearch);
+      });
+      setFilteredUsers(filtered);
+    }
+  }, [searchTerm, users]);
+
 
   const fetchFirstPage = async () => {
     setLoading(true);
@@ -34,6 +59,8 @@ export default function AllUsersPage() {
       const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
       setUsers(usersList);
+      setFilteredUsers(usersList); // Initialize filtered list
+      
       if (querySnapshot.docs.length > 0) {
         setFirstVisible(querySnapshot.docs[0]);
         setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
@@ -57,6 +84,8 @@ export default function AllUsersPage() {
        if (!querySnapshot.empty) {
          const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
          setUsers(usersList);
+         setFilteredUsers(usersList); // Update filter list
+         setSearchTerm(''); // Reset search on page change
          setFirstVisible(querySnapshot.docs[0]);
          setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
          setIsFirstPage(false);
@@ -79,6 +108,8 @@ export default function AllUsersPage() {
       const querySnapshot = await getDocs(q);
       const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setUsers(usersList);
+      setFilteredUsers(usersList); // Update filter list
+      setSearchTerm(''); // Reset search on page change
       setFirstVisible(querySnapshot.docs[0]);
       setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
       setPageHistory(newHistory);
@@ -93,43 +124,41 @@ export default function AllUsersPage() {
   const handleDelete = async (userId) => {
     if (confirm("Are you sure?")) {
       await deleteDoc(doc(db, "users", userId));
-      setUsers(users.filter(u => u.id !== userId));
+      const updatedList = users.filter(u => u.id !== userId);
+      setUsers(updatedList);
+      // Re-run filter logic manually since useEffect might not catch deep array mutation immediately
+      if (searchTerm === '') {
+        setFilteredUsers(updatedList);
+      } else {
+        setFilteredUsers(updatedList.filter(u => u.email.includes(searchTerm))); // Simplified filter
+      }
     }
   };
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
+      // PDF logic remains exactly the same...
       const querySnapshot = await getDocs(collection(db, "users"));
       const doc = new jsPDF();
-      
       doc.setFontSize(18);
       doc.text("Anwesha 2025 - All Users Report", 14, 20);
-      
       const tableColumn = ["First Name", "Last Name", "Email", "Anwesha ID", "Role", "College"];
       const tableRows = [];
-
       querySnapshot.forEach((docSnapshot) => {
         const data = docSnapshot.data();
         tableRows.push([
-          data.personal.firstName || '',
-          data.personal.lastName || '',
+          data.personal?.firstName || '',
+          data.personal?.lastName || '',
           data.email || '',
           data.anweshaId || 'N/A',
           data.role || 'user',
           data.college?.name || 'N/A',
         ]);
       });
-
       autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 45,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [79, 70, 229] } // Violet color for PDF header
+        head: [tableColumn], body: tableRows, startY: 45, theme: 'grid', styles: { fontSize: 8 }, headStyles: { fillColor: [79, 70, 229] }
       });
-
       doc.save(`anwesha_users_export.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -145,47 +174,53 @@ export default function AllUsersPage() {
   );
 
   return (
-    // 1. Main Background: Slate-950 (Dark)
     <div className="min-h-screen bg-slate-950 text-slate-200 p-6 sm:p-12 font-sans">
       
-      {/* 2. Container Card: Slate-900 with subtle border */}
       <div className="max-w-7xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
         
-        {/* Header Section */}
-        <div className="p-8 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/50">
-          <div>
-            <h2 className="text-3xl font-black text-white tracking-tight">User Database</h2>
-            <p className="text-slate-400 text-sm mt-1">Manage all registered participants.</p>
-          </div>
+        {/* Header Section with Search */}
+        <div className="p-8 border-b border-slate-800 flex flex-col gap-6 bg-slate-900/50">
           
-          <button 
-            onClick={handleDownloadPDF}
-            disabled={downloading}
-            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 ${
-              downloading 
-                ? "bg-slate-700 cursor-not-allowed text-slate-400" 
-                : "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-900/20"
-            }`}
-          >
-            {downloading ? (
-              <>
-                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                 <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <span>Export PDF</span>
-              </>
-            )}
-          </button>
+          {/* Top Row: Title & Actions */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-3xl font-black text-white tracking-tight">User Database</h2>
+              <p className="text-slate-400 text-sm mt-1">Manage all registered participants.</p>
+            </div>
+            
+            <button 
+              onClick={handleDownloadPDF}
+              disabled={downloading}
+              className={`px-6 py-3 rounded-xl font-bold text-sm transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 ${
+                downloading 
+                  ? "bg-slate-700 cursor-not-allowed text-slate-400" 
+                  : "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-900/20"
+              }`}
+            >
+              {downloading ? "Generating..." : "Export PDF"}
+            </button>
+          </div>
+
+          {/* ✅ NEW: Search Bar Row */}
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <input 
+              type="text" 
+              placeholder="Search by Name, Anwesha ID, Role, or Email..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-slate-600"
+            />
+          </div>
+
         </div>
         
         {/* Table Section */}
         <div className="overflow-x-auto">
           <table className="min-w-full text-left border-collapse">
             <thead>
-              {/* Dark Header */}
               <tr className="bg-slate-950/50 border-b border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
                 <th className="p-6">User Profile</th>
                 <th className="p-6">Anwesha ID</th>
@@ -195,72 +230,85 @@ export default function AllUsersPage() {
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-slate-800/50">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="p-6">
-                    <div className="font-bold text-white text-base">{user.personal.firstName} {user.personal.lastName}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">{user.email}</div>
-                  </td>
-                  <td className="p-6 font-mono text-blue-400">
-                    {user.anweshaId || <span className="text-slate-600">N/A</span>}
-                  </td>
-                  <td className="p-6 text-slate-300">
-                    {user.college?.name || "Unknown"}
-                  </td>
-                  <td className="p-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                       user.role === 'admin' 
-                         ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
-                         : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                    }`}>
-                      {user.role || 'USER'}
-                    </span>
-                  </td>
-                  <td className="p-6 text-right">
-                      <div className="flex justify-end items-center gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/admin/users/${user.id}`}>
-                              <div className="p-2 bg-slate-800 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                              </div>
-                          </Link>
-                          <button onClick={() => handleDelete(user.id)} className="p-2 bg-slate-800 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                      </div>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="p-6">
+                      <div className="font-bold text-white text-base">{user.personal?.firstName} {user.personal?.lastName}</div>
+                      <div className="text-slate-500 text-xs mt-0.5">{user.email}</div>
+                    </td>
+                    <td className="p-6 font-mono text-blue-400">
+                      {user.anweshaId || <span className="text-slate-600">N/A</span>}
+                    </td>
+                    <td className="p-6 text-slate-300">
+                      {user.college?.name || "Unknown"}
+                    </td>
+                    <td className="p-6">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                         user.role === 'admin' 
+                           ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
+                           : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      }`}>
+                        {user.role || 'USER'}
+                      </span>
+                    </td>
+                    <td className="p-6 text-right">
+                        <div className="flex justify-end items-center gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                            <Link href={`/admin/users/${user.id}`}>
+                                <div className="p-2 bg-slate-800 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                </div>
+                            </Link>
+                            <button onClick={() => handleDelete(user.id)} className="p-2 bg-slate-800 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="p-10 text-center text-slate-500 italic">
+                    No users found matching "{searchTerm}"
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* PAGINATION (Dark Mode) */}
+        {/* Pagination Section */}
         <div className="flex justify-between items-center p-6 border-t border-slate-800 bg-slate-900/50">
-          <span className="text-sm text-slate-500 font-medium">Page {pageHistory.length + 1}</span>
-          <div className="flex gap-3">
-              <button 
-                  onClick={handlePrevPage} 
-                  disabled={isFirstPage || loading}
-                  className={`px-5 py-2 text-sm font-bold rounded-lg border transition-all ${
-                    isFirstPage 
-                      ? 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed' 
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                  }`}
-              >
-                  Previous
-              </button>
-              <button 
-                  onClick={handleNextPage} 
-                  disabled={isLastPage || loading}
-                  className={`px-5 py-2 text-sm font-bold rounded-lg border transition-all ${
-                    isLastPage 
-                      ? 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed' 
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                  }`}
-              >
-                  Next
-              </button>
-          </div>
+          <span className="text-sm text-slate-500 font-medium">
+             {searchTerm ? 'Showing Search Results' : `Page ${pageHistory.length + 1}`}
+          </span>
+          {/* Only show pagination controls if NOT searching */}
+          {!searchTerm && (
+            <div className="flex gap-3">
+                <button 
+                    onClick={handlePrevPage} 
+                    disabled={isFirstPage || loading}
+                    className={`px-5 py-2 text-sm font-bold rounded-lg border transition-all ${
+                      isFirstPage 
+                        ? 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed' 
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                    }`}
+                >
+                    Previous
+                </button>
+                <button 
+                    onClick={handleNextPage} 
+                    disabled={isLastPage || loading}
+                    className={`px-5 py-2 text-sm font-bold rounded-lg border transition-all ${
+                      isLastPage 
+                        ? 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed' 
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                    }`}
+                >
+                    Next
+                </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
