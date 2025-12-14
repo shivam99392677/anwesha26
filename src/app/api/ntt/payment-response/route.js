@@ -1,81 +1,75 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { AESCipher } from "@/lib/AESCipher";
-import { db } from "@/lib/firebaseConfig";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebaseConfig";
 
 export async function POST(req) {
-  const form = await req.formData();
-  const encData = form.get("encData");
+  try {
+    const formData = await req.formData();
+    const encData = formData.get("encData");
 
-  const cipher = new AESCipher();
-  const decrypted = cipher.decrypt(encData);
-  const data = JSON.parse(decrypted);
+    const cipher = new AESCipher(process.env.NTT_AES_RESP_KEY);
+    const decrypted = cipher.decrypt(encData);
+    const data = JSON.parse(decrypted); 
 
-  const status =
-    data.payInstrument.responseDetails.statusCode;
+    const statusCode =
+      data.payInstrument.responseDetails.statusCode;
 
-  if (status !== "OTS0000") {
+    if (statusCode !== "OTS0000") {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`
+      );
+    }
+
+    const payDetails = data.payInstrument.payDetails;
+    const merchDetails = data.payInstrument.merchDetails;
+    const bankDetails =
+      data.payInstrument.payModeSpecificData.bankDetails;
+
+    // 🔐 SIGNATURE VERIFICATION
+    const sigStr =
+      merchDetails.merchId +
+      payDetails.atomTxnId +
+      merchDetails.merchTxnId +
+      payDetails.totalAmount +
+      statusCode +
+      data.payInstrument.payModeSpecificData.subChannel[0] +
+      bankDetails.bankTxnId;
+
+    const expectedSig = crypto
+      .createHmac("sha512", process.env.NTT_RESP_HASH_KEY)
+      .update(sigStr)
+      .digest("hex");
+
+    if (expectedSig !== payDetails.signature) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`
+      );
+    }
+
+    const extras = data.payInstrument.extras;
+
+    // 🔥 SAVE PAYMENT
+    await setDoc(doc(db, "payments", payDetails.atomTxnId), {
+      uid: extras.udf1,
+      items: JSON.parse(extras.udf2),
+      name: extras.udf3,
+      email: extras.udf4,
+      amount: payDetails.totalAmount,
+      atomTxnId: payDetails.atomTxnId,
+      merchTxnId: merchDetails.merchTxnId,
+      status: "paid",
+      createdAt: serverTimestamp(),
+    });
+
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/orders`
+    );
+  } catch (err) {
+    console.error("PAYMENT RESPONSE ERROR:", err);
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`
     );
   }
-
-  const uid = data.payInstrument.extras.udf1;
-  const items = JSON.parse(data.payInstrument.extras.udf2);
-  const orderId =
-    data.payInstrument.merchDetails.merchTxnId;
-  const paymentId =
-    data.payInstrument.payDetails.atomTxnId;
-
-  for (const item of items) {
-    if (item.type === "event" && item.eventCategory === "multicity") {
-      await setDoc(
-        doc(db, "multicity", item.city, "registrations", orderId),
-        {
-          uid,
-          eventId: item.id,
-          eventName: item.name,
-          city: item.city,
-          date: item.date,
-          orderId,
-          paymentId,
-          createdAt: serverTimestamp(),
-        }
-      );
-    } else if (item.type === "event") {
-      const cleaned = item.id.replace(/\s+/g, "_");
-
-      await setDoc(
-        doc(db, "event_registrations", item.eventCategory, cleaned, orderId),
-        {
-          uid,
-          eventId: item.id,
-          eventName: item.name,
-          eventCategory: item.eventCategory,
-          city: item.city,
-          date: item.date,
-          orderId,
-          paymentId,
-          createdAt: serverTimestamp(),
-        }
-      );
-    } else if (item.type === "store") {
-      await setDoc(
-        doc(db, "store_orders", item.id, "orders", orderId),
-        {
-          uid,
-          productId: item.id,
-          productName: item.name,
-          orderId,
-          paymentId,
-          createdAt: serverTimestamp(),
-        }
-      );
-    }
-  }
-
-  return NextResponse.redirect(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/orders`
-  );
 }
