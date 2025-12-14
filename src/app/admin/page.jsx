@@ -1,13 +1,13 @@
 "use client";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, getCountFromServer, query, orderBy, limit, getDocs } from 'firebase/firestore';
+// Added 'doc' and 'getDoc' to imports for fetching user details
+import { collection, getCountFromServer, query, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebaseConfig';
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   
-  // State for the Stats Cards
   const [statsData, setStatsData] = useState({
     users: 0,
     events: 0,
@@ -15,19 +15,18 @@ export default function AdminDashboard() {
     products: 0
   });
 
-  // State for Recent Activity
   const [recentUsers, setRecentUsers] = useState([]);
+  const [recentPayments, setRecentPayments] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // 1. Define Collections
         const usersColl = collection(db, "users");
         const eventsColl = collection(db, "events");
         const ordersColl = collection(db, "payments");
         const productsColl = collection(db, "products");
 
-        // 2. Fetch Counts in Parallel
+        // 1. Fetch Counts
         const [userSnap, eventSnap, orderSnap, productSnap] = await Promise.all([
           getCountFromServer(usersColl),
           getCountFromServer(eventsColl),
@@ -35,23 +34,51 @@ export default function AdminDashboard() {
           getCountFromServer(productsColl)
         ]);
 
-        // 3. Fetch Recent Activity
-        const q = query(usersColl, orderBy("createdAt", "desc"), limit(5));
-        const recentSnap = await getDocs(q);
-        
-        const recentList = recentSnap.docs.map(doc => ({
+        // 2. Fetch Recent Users
+        const userQ = query(usersColl, orderBy("createdAt", "desc"), limit(5));
+        const recentUserSnap = await getDocs(userQ);
+        const recentUserList = recentUserSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
 
-        // 4. Update State
+        // 3. Fetch Recent Payments & Enrich with User Email
+        const paymentQ = query(ordersColl, orderBy("createdAt", "desc"), limit(5));
+        const recentPaymentSnap = await getDocs(paymentQ);
+        
+        // Map payments and fetch the corresponding user email using userId
+        const recentPaymentList = await Promise.all(recentPaymentSnap.docs.map(async (paymentDoc) => {
+          const data = paymentDoc.data();
+          let userEmail = "Unknown User";
+
+          // If payment has userId, fetch the user's email from 'users' collection
+          if (data.userId) {
+            try {
+              const userDocRef = doc(db, "users", data.userId);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists()) {
+                userEmail = userDocSnap.data().email;
+              }
+            } catch (err) {
+              console.error("Error fetching user for payment:", err);
+            }
+          }
+
+          return {
+            id: paymentDoc.id,
+            ...data,
+            email: userEmail // Add the fetched email to the data object
+          };
+        }));
+
         setStatsData({
           users: userSnap.data().count,
           events: eventSnap.data().count,
           orders: orderSnap.data().count,
           products: productSnap.data().count
         });
-        setRecentUsers(recentList);
+        setRecentUsers(recentUserList);
+        setRecentPayments(recentPaymentList);
         setLoading(false);
 
       } catch (error) {
@@ -65,7 +92,9 @@ export default function AdminDashboard() {
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
-    const date = typeof timestamp === 'number' ? new Date(timestamp) : timestamp.toDate();
+    const date = typeof timestamp === 'number' || timestamp instanceof Date 
+      ? new Date(timestamp) 
+      : timestamp.toDate(); 
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -166,50 +195,106 @@ export default function AdminDashboard() {
         {/* Main Content Area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Recent Activity Column */}
-          <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl shadow-xl p-8">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Live Registrations
-              </h2>
-              <Link href="/admin/all-users" className="text-xs font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider transition-colors border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/10">
-                View All Users
-              </Link>
-            </div>
+          {/* Left Column: Recent Activity */}
+          <div className="lg:col-span-2">
             
-            <div className="space-y-6">
-              {recentUsers.length === 0 ? (
-                  <div className="text-center py-10 text-slate-600 italic">No recent activity found.</div>
-              ) : (
-                  recentUsers.map((user, i) => (
-                  <div key={user.id} className="relative pl-6 border-l border-slate-800 hover:border-blue-500/50 transition-colors group">
-                      {/* Timeline Dot */}
-                      <div className="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-700 border-2 border-slate-900 group-hover:bg-blue-500 transition-colors"></div>
+            {/* Live Registrations Card */}
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl shadow-xl p-8 mb-8">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  Live Registrations
+                </h2>
+                <Link href="/admin/all-users" className="text-xs font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider transition-colors border border-blue-500/30 px-3 py-1.5 rounded-lg hover:bg-blue-500/10">
+                  View All Users
+                </Link>
+              </div>
+              
+              <div className="space-y-6">
+                {recentUsers.length === 0 ? (
+                    <div className="text-center py-10 text-slate-600 italic">No recent activity found.</div>
+                ) : (
+                    recentUsers.map((user, i) => (
+                    <div key={user.id} className="relative pl-6 border-l border-slate-800 hover:border-blue-500/50 transition-colors group">
+                        <div className="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-700 border-2 border-slate-900 group-hover:bg-blue-500 transition-colors"></div>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm text-slate-200 font-medium group-hover:text-white transition-colors">
+                                <span className="font-bold">{user.personal.firstName} {user.personal.lastName}</span> joined from <span className="text-blue-400">{user.college?.name || "Unknown"}</span>
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1 font-mono">
+                                {user.email}
+                            </p>
+                          </div>
+                          <span className="text-xs font-bold text-slate-600 bg-slate-950 px-2 py-1 rounded border border-slate-800">
+                            {formatTime(user.createdAt)}
+                          </span>
+                        </div>
+                    </div>
+                    ))
+                )}
+              </div>
+            </div>
+
+            {/* Latest Payments Card */}
+            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl shadow-xl p-8">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Latest Payments
+                </h2>
+                <Link href="/admin/all-payments" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 uppercase tracking-wider transition-colors border border-emerald-500/30 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10">
+                  View All Payments
+                </Link>
+              </div>
+              
+              <div className="space-y-4">
+                {recentPayments.length === 0 ? (
+                    <div className="text-center py-10 text-slate-600 italic">No recent payments found.</div>
+                ) : (
+                  recentPayments.map((payment) => (
+                    <div key={payment.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/50 border border-slate-800 hover:border-emerald-500/30 transition-all group">
                       
-                      <div className="flex justify-between items-start">
+                      {/* Left: Icon & Info */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
                         <div>
-                          <p className="text-sm text-slate-200 font-medium group-hover:text-white transition-colors">
-                              <span className="font-bold">{user.personal.firstName} {user.personal.lastName}</span> joined from <span className="text-blue-400">{user.college?.name || "Unknown"}</span>
+                          <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                            {/* FIX: Use 'totalAmount' instead of 'amount' */}
+                            ₹{payment.totalAmount || "0"}
                           </p>
-                          <p className="text-xs text-slate-500 mt-1 font-mono">
-                              {user.email}
+                          <p className="text-xs text-slate-500 font-mono">
+                            {/* FIX: Now uses the fetched email */}
+                            {payment.email || "Unknown User"}
                           </p>
                         </div>
-                        <span className="text-xs font-bold text-slate-600 bg-slate-950 px-2 py-1 rounded border border-slate-800">
-                          {formatTime(user.createdAt)}
-                        </span>
                       </div>
-                  </div>
+
+                      {/* Right: Status & Time */}
+                      <div className="text-right">
+                        {/* FIX: Added check for 'paid' status */}
+                        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded border ${
+                          (payment.status === 'success' || payment.status === 'paid') ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          payment.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
+                          'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {payment.status || "Completed"}
+                        </span>
+                        <p className="text-xs text-slate-600 mt-1">
+                          {formatTime(payment.createdAt)}
+                        </p>
+                      </div>
+                    </div>
                   ))
-              )}
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Quick Actions Column */}
+          {/* Right Column: Quick Actions */}
           <div className="space-y-6">
-            
-            {/* Action Card */}
             <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl shadow-xl p-8">
               <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
               <div className="space-y-3">
@@ -237,7 +322,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* System Status */}
             <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-2xl p-6 flex items-center gap-4">
               <div className="relative">
                 <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping absolute opacity-75"></div>
@@ -248,7 +332,6 @@ export default function AdminDashboard() {
                 <p className="text-xs text-emerald-400 mt-0.5">Firebase Connected</p>
               </div>
             </div>
-
           </div>
 
         </div>

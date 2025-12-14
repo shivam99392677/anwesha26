@@ -11,7 +11,7 @@ export async function POST(req) {
 
     const cipher = new AESCipher(process.env.NTT_AES_RESP_KEY);
     const decrypted = cipher.decrypt(encData);
-    const data = JSON.parse(decrypted);
+    const data = JSON.parse(decrypted); 
 
     const statusCode =
       data.payInstrument.responseDetails.statusCode;
