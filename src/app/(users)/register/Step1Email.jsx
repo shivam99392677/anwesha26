@@ -96,7 +96,7 @@ export default function Step1EmailPassword({ next }) {
 
   return (
     <div className="flex items-center justify-center mb-12  px-4">
-      <div className="rounded-3xl shadow-xl border p-10  max-w-md bg-white/80 px-10 md:px-16 mx-6  md:max-w-full text-center animate-fade-in">
+      <div className="rounded-3xl shadow-xl border p-10  max-w-md bg-white/80 px-10 md:px-16 mx-6  text-center animate-fade-in">
         <h2 className="text-4xl md:text-6xl font-extrabold mb-8  bg-clip-text text-slate-800">
           Register for Anwesha
         </h2>
