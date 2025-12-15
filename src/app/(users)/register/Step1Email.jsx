@@ -107,9 +107,9 @@ export default function Step1EmailPassword({ next }) {
   };
 
   return (
-    <div className="flex items-center justify-center mb-12 px-4">
-      <div className="rounded-3xl shadow-xl border p-10 w-full max-w-md bg-white/80 text-center animate-fade-in">
-        <h2 className="text-4xl font-extrabold mb-8 bg-linear-to-r from-[#471b00] to-[#d79757] bg-clip-text text-transparent">
+    <div className="flex items-center justify-center mb-12  px-4">
+      <div className="rounded-3xl shadow-xl border p-10  max-w-md bg-white/80 px-10 md:px-16 mx-6  text-center animate-fade-in">
+        <h2 className="text-4xl md:text-6xl font-extrabold mb-8  bg-clip-text text-slate-800">
           Register for Anwesha
         </h2>
 
@@ -160,7 +160,7 @@ export default function Step1EmailPassword({ next }) {
             <button
               type="submit"
               disabled={disabled}
-              className="w-full text-xl tracking-wide bg-linear-to-r from-[#471b00] to-[#d79757] text-white
+              className="w-full text-2xl tracking-wide bg-[url('/pics/registerBg.jpg')] cursor-pointer text-white
               rounded-xl py-3 font-bold shadow-lg hover:scale-105 transition disabled:opacity-50"
             >
               {disabled ? "Sending..." : "Send OTP →"}

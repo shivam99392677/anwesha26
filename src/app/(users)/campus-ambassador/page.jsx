@@ -3,6 +3,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import clsx from "clsx";
 import GreetingLottie from "../../../components/displaylottie";
 import styles from "./campusamb.module.css";
 import Image from "next/image";
@@ -75,7 +76,7 @@ export default function CampusAmbassador() {
     }, []);
 
     return (
-        <div className={styles.campusamb_body}>
+        <div className={clsx(styles.campusamb_body,"w-fit")}>
             <Head>
                 <title>Anwesha 2024 - Campus Ambassador</title>
                 <meta name="description" content="Campus Ambassador Program Anwesha 2024" />

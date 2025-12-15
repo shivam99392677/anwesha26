@@ -68,8 +68,8 @@ export default function Step2Personal({ next }) {
   };
 
   return (
-    <div className="flex items-center justify-center mb-14 px-2">
-      <div className="rounded-3xl shadow-2xl border p-10 w-full max-w-lg bg-white/80 backdrop-blur-lg text-center animate-fade-in">
+    <div className="flex items-center  justify-center mb-14 ">
+      <div className="rounded-3xl shadow-2xl border p-10  md:w-[50vw] bg-white/80 backdrop-blur-lg text-center animate-fade-in">
 
         {/* Heading */}
         <h3 className="text-[3rem] font-extrabold text-[#433D7F] mb-8">
@@ -130,7 +130,7 @@ export default function Step2Personal({ next }) {
             name="gender"
             value={localData.gender}
             onChange={handleChange}
-            className="w-full pl-4 py-3 rounded-xl bg-white/60 text-gray-700 outline-none border-2 border-transparent focus:border-blue-400"
+            className="w-full pl-4 py-3 gender rounded-xl bg-white/60 text-gray-700 outline-none border-2 border-transparent focus:border-blue-400"
             required
           >
             <option value="">Select Gender</option>

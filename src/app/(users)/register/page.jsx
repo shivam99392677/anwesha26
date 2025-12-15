@@ -41,7 +41,7 @@ export default function RegisterPage() {
   }, [currentUser]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex font-[SF_Ironside] tracking-wide items-center bg-[url('/pics/registerBg.jpg')] justify-center min-h-screen bg-gray-100">
       {step === 1 && <Step1 next={() => setStep(2)} />}
       {step === 2 && <Step2 next={() => setStep(3)} />}
       {step === 3 && <Step3 next={() => setStep(4)} />}
