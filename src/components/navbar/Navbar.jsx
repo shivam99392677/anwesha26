@@ -8,6 +8,7 @@ import { useAuthUser } from "@/context/AuthUserContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useRive, useStateMachineInput } from "@rive-app/react-canvas";
 import { toast } from "react-hot-toast";
+import { FaUserCircle, FaShoppingCart } from "react-icons/fa";
 
 const STATE_MACHINE_NAME = "Basic State Machine";
 const INPUT_NAME = "Switch";
@@ -19,6 +20,10 @@ function Navigation() {
   const pathname = usePathname();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const dropdownRef = useRef(null);
+  const refNav = useRef(null);
 
   const { rive, RiveComponent } = useRive({
     src: "/navbar/hamburger-time.riv",
@@ -27,47 +32,55 @@ function Navigation() {
   });
 
   const toggleInput = useStateMachineInput(rive, STATE_MACHINE_NAME, INPUT_NAME);
-  const refNav = useRef(null);
-  
 
-  useEffect(() => closeDrawer(), [pathname]);
+  useEffect(() => {
+    if (!showDropdown) return;
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [showDropdown]);
 
   useEffect(() => {
     if (!drawerOpen) return;
-    function handleOutside(e) {
+    const handler = (e) => {
       if (refNav.current && !refNav.current.contains(e.target)) {
         closeDrawer();
       }
-    }
-    document.addEventListener("click", handleOutside);
-    return () => document.removeEventListener("click", handleOutside);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
   }, [drawerOpen]);
+
+  useEffect(() => closeDrawer(), [pathname]);
 
   const toggleDrawer = () => {
     const drawer = document.getElementById("drawer");
-    const nav_div = document.getElementById("nav_div");
-    if (!drawer || !nav_div) return;
+    const nav = document.getElementById("nav_div");
+    if (!drawer || !nav) return;
 
     if (!drawerOpen) {
       drawer.style.display = "block";
-      nav_div.style.backgroundColor = "#000";
+      nav.style.backgroundColor = "#000";
       setTimeout(() => (drawer.style.opacity = 1), 50);
-    } else {
-      closeDrawer();
-    }
+    } else closeDrawer();
+
     setDrawerOpen(!drawerOpen);
     toggleInput?.fire();
   };
 
   const closeDrawer = () => {
     const drawer = document.getElementById("drawer");
-    const nav_div = document.getElementById("nav_div");
+    const nav = document.getElementById("nav_div");
     if (!drawer) return;
 
     drawer.style.opacity = 0;
     setTimeout(() => {
       drawer.style.display = "none";
-      if (nav_div) nav_div.style.backgroundColor = "";
+      if (nav) nav.style.backgroundColor = "";
     }, 200);
 
     setDrawerOpen(false);
@@ -75,33 +88,10 @@ function Navigation() {
 
   const handleLogout = async () => {
     await logoutUser();
+    setShowDropdown(false);
     closeDrawer();
     toast.success("Logged out!");
   };
-  const [showDropdown, setShowDropdown] = useState(false);
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
-  };
-
-
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    if (!showDropdown) return;
-
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [showDropdown]);
-  
 
   return (
     <>
@@ -112,15 +102,11 @@ function Navigation() {
         </div>
 
         {/* Logo */}
-        <Link
-          href="/"
-          className={styles.navLogo}
-          onClick={() => drawerOpen && toggleInput?.fire()}
-        >
+        <Link href="/" className={styles.navLogo}>
           <Image src="/navbar/logo_no_bg.svg" alt="logo" width={108} height={45} />
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Links */}
         <div className={styles.navLinks}>
           <ul>
             <li><Link className={styles.linknav} href="/events">Events</Link></li>
@@ -131,108 +117,256 @@ function Navigation() {
             <li><Link className={styles.linknav} href="/about">About</Link></li>
             <li><Link className={styles.linknav} href="/contact">Contact</Link></li>
             <li><Link className={styles.linknav} href="/campus-ambassador">Campus Ambassador</Link></li>
+            <li><Link className={styles.linknav} href="/store">Store</Link></li>
           </ul>
         </div>
 
-        {/* Desktop Action Buttons */}
-        <div className={cn(styles.navEnds, "mr-14")} >
-          <button className={cn(styles.sexy_button, styles.sexy_button_small)}
-            onClick={() => router.push("/anweshapass")}>
+        {/* Desktop Right */}
+        <div className={cn(styles.navEnds, "mr-14", "gap-2")}>
+
+          {/* GET PASSES (DESKTOP ONLY) */}
+          <button
+            className={cn(styles.sexy_button, styles.sexy_button_small)}
+            onClick={() => router.push("/anweshapass")}
+          >
             GET PASSES
           </button>
 
-          {/* Show Admin Panel + Editor Panel like GET PASSES */}
-          {/* {currentUser?.role === "admin" && (
-            <>
-              <button className={cn(styles.sexy_button, styles.sexy_button_small)}
-                onClick={() => router.push("/admin")}>
-                ADMIN PANEL
-              </button>
-
-              <button className={cn(styles.sexy_button, styles.sexy_button_small)}
-                onClick={() => router.push("/editor")}>
-                EDITOR PANEL
-              </button>
-            </>
-          )}
-
-          {currentUser?.role === "editor" && (
-            <button className={cn(styles.sexy_button, styles.sexy_button_small)}
-              onClick={() => router.push("/editor")}>
-              EDITOR PANEL
-            </button>
-          )} */}
-
-      <div className="relative"  ref={dropdownRef}>
-      <button className={cn(styles.sexy_button, styles.sexy_button_small)}
-            onClick={() =>
-              
-              currentUser
-                ? toggleDropdown()
-                : router.push(`/login?from=${encodeURIComponent(pathname)}`)
-            }>
-
-            {!currentUser ? "LOGIN" : "PROFILE"}
-          </button>
-
-          {showDropdown && (
-            <ul className="absolute rounded-2xl px-4 text-white bg-black mt-3 py-2  shadow-md">
-              
-              <li>       {currentUser?.role === "admin" && (
-            <>
-               <button className="text-white text-nowrap w-full text-left cursor-pointer border-2 border-black bg-gray-800 mt-2  px-4 py-2 hover:bg-gray-500 rounded-xl"
-
-                onClick={() => 
-                  {
-                    setShowDropdown(false);
-                    router.push("/admin")}}>
-                ADMIN PANEL
-              </button>
-
-              <button className="text-white text-nowrap w-full text-left cursor-pointer border-2 border-black bg-gray-800 my-2  px-4 py-2 hover:bg-gray-500 rounded-xl"
-                onClick={() =>{
-                  setShowDropdown(false);
-                  router.push("/editor")}}>
-                EDITOR PANEL
-              </button>
-            </>
-          )}</li>
-
-          <li>{currentUser?.role === "editor" && (
-            <button className="text-white text-nowrap w-full text-left px-4 py-2 hover:bg-gray-700 rounded"
-              onClick={() =>{ router.push("/editor")}}>
-              EDITOR PANEL
+          {/* LOGIN (DESKTOP ONLY, logged out) */}
+          {!currentUser && (
+            <button
+              className={cn(styles.sexy_button, styles.sexy_button_small)}
+              onClick={() => router.push(`/login?from=${encodeURIComponent(pathname)}`)}
+            >
+              LOGIN
             </button>
           )}
-          </li>
-           
-          <li>
-              {currentUser && (
-            
-            <button className="text-white text-nowrap w-full text-center cursor-pointer border-2 border-black bg-gray-800 mb-2  px-4 py-2 hover:bg-red-500 rounded-xl"
-            onClick={handleLogout}>
-                  LOGOUT
-                </button>
-               
-              )} </li>
-            </ul>
-          )}
-      </div>
 
-          {/* {currentUser && (
-            <button className={cn(styles.sexy_button, styles.sexy_button_small)}
-              onClick={handleLogout}>
-              LOGOUT
-            </button>
-          )} */}
+          {/* PROFILE + CART (DESKTOP, logged in) */}
+          {currentUser && (
+            <div
+              className="relative flex items-center gap-2 "
+              ref={dropdownRef}
+              // onMouseEnter={() => setShowDropdown(true)}
+              // onMouseLeave={() => setShowDropdown(false)}
+            >
+              <FaShoppingCart
+                size={28}
+                color="white"
+                style={{ cursor: "pointer", marginRight: "12px" }}
+                onClick={() => router.push("/checkout")}
+              />
+
+              <FaUserCircle
+                size={28}
+                color="white"
+                style={{ cursor: "pointer" }}
+                onClick={() => setShowDropdown(prev => !prev)}
+              />
+
+              {showDropdown && (
+                <ul className="absolute right-0 top-full mt-3 w-56 rounded-2xl bg-black shadow-lg text-white">
+
+                  {/* PROFILE */}
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/profile");
+                      }}
+                    >
+                      Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/orders");
+                      }}
+                    >
+                     Orders
+                    </button>
+                  </li>
+
+                  {/* ADMIN */}
+                  {currentUser?.role === "admin" && (
+                    <>
+                      <li className="mt-2">
+                        <button
+                          className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                          onClick={() => {
+                            setShowDropdown(false);
+                            router.push("/admin");
+                          }}
+                        >
+                          Admin Panel
+                        </button>
+                      </li>
+
+                      <li className="mt-2">
+                        <button
+                          className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                          onClick={() => {
+                            setShowDropdown(false);
+                            router.push("/editor");
+                          }}
+                        >
+                          Editor Panel
+                        </button>
+                      </li>
+                    </>
+                  )}
+
+                  {/* EDITOR */}
+                  {currentUser?.role === "editor" && (
+                    <li className="mt-2">
+                      <button
+                        className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                        onClick={() => {
+                          setShowDropdown(false);
+                          router.push("/editor");
+                        }}
+                      >
+                        Editor Panel
+                      </button>
+                    </li>
+                  )}
+
+                  {/* LOGOUT */}
+                  <li className="mt-3">
+                    <button
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-500 rounded-xl"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </ul>
+              )}
+
+            </div>
+          )}
         </div>
+
+        {/* MOBILE ICONS (logged in only) */}
+        {currentUser && (
+          <div
+            // className={styles.mobile_only}
+            className="flex lg:hidden gap"
+            style={{
+              position: "absolute",
+              right: "16px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              gap: "18px",
+              zIndex: 20,
+            }}
+          >
+            <FaShoppingCart
+              size={28}
+              color="white"
+              style={{ cursor: "pointer" }}
+              onClick={() => router.push("/checkout")}
+            />
+            <FaUserCircle
+              size={28}
+              color="white"
+              style={{ cursor: "pointer" }}
+              onClick={() => setShowDropdown(prev => !prev)}
+            />
+                          {showDropdown && (
+                <ul className="absolute right-0 top-full mt-3 w-56 rounded-2xl bg-black shadow-lg text-white">
+
+                  {/* PROFILE */}
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/profile");
+                      }}
+                    >
+                      Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/orders");
+                      }}
+                    >
+                      Orders
+                    </button>
+                  </li>
+
+                  {/* ADMIN */}
+                  {currentUser?.role === "admin" && (
+                    <>
+                      <li className="mt-2">
+                        <button
+                          className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                          onClick={() => {
+                            setShowDropdown(false);
+                            router.push("/admin");
+                          }}
+                        >
+                          Admin Panel
+                        </button>
+                      </li>
+
+                      <li className="mt-2">
+                        <button
+                          className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                          onClick={() => {
+                            setShowDropdown(false);
+                            router.push("/editor");
+                          }}
+                        >
+                          Editor Panel
+                        </button>
+                      </li>
+                    </>
+                  )}
+
+                  {/* EDITOR */}
+                  {currentUser?.role === "editor" && (
+                    <li className="mt-2">
+                      <button
+                        className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                        onClick={() => {
+                          setShowDropdown(false);
+                          router.push("/editor");
+                        }}
+                      >
+                        Editor Panel
+                      </button>
+                    </li>
+                  )}
+
+                  {/* LOGOUT */}
+                  <li className="mt-3">
+                    <button
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-500 rounded-xl"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </ul>
+              )}
+          </div>
+        )}
       </div>
 
-      {/* Drawer (Mobile Menu) */}
+      {/* Drawer */}
       <div id="drawer" className={styles.nav_drawer}>
         <ul>
           <li><Link href="/" onClick={toggleDrawer}>Home</Link></li>
-          {currentUser && <li><Link href="/profile" onClick={toggleDrawer}>Profile</Link></li>}
           <li><Link href="/events" onClick={toggleDrawer}>Events</Link></li>
           <li><Link href="/gallery" onClick={toggleDrawer}>Gallery</Link></li>
           <li><Link href="/team" onClick={toggleDrawer}>Team</Link></li>
@@ -240,37 +374,20 @@ function Navigation() {
           <li><Link href="/about" onClick={toggleDrawer}>About</Link></li>
           <li><Link href="/contact" onClick={toggleDrawer}>Contact</Link></li>
           <li><Link href="/campus-ambassador" onClick={toggleDrawer}>Campus Ambassador</Link></li>
+          <li><Link href="/store" onClick={toggleDrawer}>Store</Link></li>
           <li><Link href="/anweshapass" onClick={toggleDrawer}>Get Passes</Link></li>
 
-          {/* Mobile Role Buttons */}
-          {currentUser?.role === "admin" && (
-            <>
-              <li><Link href="/admin" onClick={toggleDrawer}>Admin Panel</Link></li>
-              <li><Link href="/editor" onClick={toggleDrawer}>Editor Panel</Link></li>
-            </>
+          {!currentUser && (
+            <li><Link href="/login" onClick={toggleDrawer}>Login</Link></li>
           )}
 
-          {currentUser?.role === "editor" && (
-            <li><Link href="/editor" onClick={toggleDrawer}>Editor Panel</Link></li>
-          )}
-
-          {/* User Info */}
-          <li>
-            {currentUser ? (
-              <div className={styles.user_container}>
-                <Link href="/profile" onClick={toggleDrawer}>
-                  <div>
-                    <span className={styles.user_name}>{currentUser?.personal?.fullName}</span>
-                    <span className={styles.user_id}>{currentUser?.anweshaId}</span>
-                  </div>
-                </Link>
-                <Image src="/assets/logout.svg" height={40} width={40} alt="logout" className={styles.logout}
-                  onClick={handleLogout} />
-              </div>
-            ) : (
-              <Link href="/login" onClick={toggleDrawer}>LOGIN</Link>
-            )}
-          </li>
+          {/* {currentUser && (
+            <li>
+              <button onClick={handleLogout} className="text-red-500">
+                Logout
+              </button>
+            </li>
+          )} */}
         </ul>
       </div>
     </>

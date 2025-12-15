@@ -24,6 +24,8 @@ export default function Step1EmailPassword({ next }) {
   const [expiryTime, setExpiryTime] = useState(null);
   const timerRef = useRef(null);
   const [remaining, setRemaining] = useState(0);
+  const [verifying, setVerifying] = useState(false);
+
 
   /** 🔹 Send OTP */
   const sendOtp = async (e) => {
@@ -66,15 +68,25 @@ export default function Step1EmailPassword({ next }) {
       return;
     }
 
-    if (otp === generatedOtp) {
+    if (otp !== generatedOtp) {
+      toast.error("Invalid OTP");
+      return;
+    }
+
+    try {
+      setVerifying(true);
       toast.success("OTP Verified!");
 
       const userDoc = await registerUser(email, password);
+
       if (userDoc) next();
-    } else {
-      toast.error("Invalid OTP");
+    } catch (err) {
+      toast.error("Registration failed");
+    } finally {
+      setVerifying(false);
     }
   };
+
 
   /** 🔹 Timer effect */
   useEffect(() => {
@@ -90,7 +102,7 @@ export default function Step1EmailPassword({ next }) {
 
   const resendOtp = () => {
     setOtpSent(false);
-    sendOtp({ preventDefault: () => {} });
+    sendOtp({ preventDefault: () => { } });
 
   };
 
@@ -162,6 +174,7 @@ export default function Step1EmailPassword({ next }) {
               <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
               <input
                 type="text"
+                disabled={verifying}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter 6-digit OTP"
@@ -178,21 +191,24 @@ export default function Step1EmailPassword({ next }) {
             ) : (
               <button
                 type="button"
-                onClick={resendOtp}
-                className="text-blue-600 underline font-semibold"
+                disabled={disabled || verifying}
+                className="text-blue-600 underline font-semibold disabled:opacity-50"
               >
                 Resend OTP
               </button>
+
             )}
 
             <button
               type="submit"
+              disabled={verifying}
               className="w-full text-lg tracking-wide bg-linear-to-r from-[#471b00] to-[#d79757] text-white
-                rounded-xl py-3 font-bold shadow-lg hover:scale-105 transition disabled:opacity-50"
-              disabled={disabled}
+    rounded-xl py-3 font-bold shadow-lg hover:scale-105 transition
+    disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Verify & Continue
+              {verifying ? "Verifying..." : "Verify & Continue"}
             </button>
+
           </form>
         )}
 

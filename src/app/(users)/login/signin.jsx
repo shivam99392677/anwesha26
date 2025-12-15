@@ -51,7 +51,7 @@ export default function Signin() {
       } else {
         router.replace("/profile");
       }
-      
+
     } catch {
       setDisabled(false);
     }
@@ -80,7 +80,7 @@ export default function Signin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-12 pr-4 py-3 text-xl rounded-xl text-black bg-white/60 outline-none border-2 border-transparent 
-                         focus:border-blue-400 focus:ring-2 focus:ring-blue-200 placeholder-gray-500"
+                  focus:border-blue-400 focus:ring-2 focus:ring-blue-200 placeholder-gray-500"
               required
             />
           </div>
@@ -88,13 +88,14 @@ export default function Signin() {
           {/* PASSWORD FIELD */}
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={20} />
+
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-12 pr-12 text-xl py-3 rounded-xl text-black bg-white/60 outline-none border-2 border-transparent 
-                         focus:border-green-400 focus:ring-2 focus:ring-green-200 placeholder-gray-500"
+                  focus:border-green-400 focus:ring-2 focus:ring-green-200 placeholder-gray-500"
               required
             />
 
@@ -106,6 +107,14 @@ export default function Signin() {
               {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
             </button>
           </div>
+
+          {/* 👉 FORGOT PASSWORD OPTION */}
+          <p
+            onClick={() => router.push("/forgot-password")}
+            className="text-right text-lg text-blue-700 font-semibold cursor-pointer hover:underline -mt-3"
+          >
+            Forgot Password?
+          </p>
 
           {/* LOGIN BUTTON */}
           <button

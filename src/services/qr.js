@@ -41,5 +41,9 @@ export const  decodeQrPayload = (qrString) => {
 
   const recalculatedHash = SHA256(originalData + SECRET_KEY).toString();
 
-  return receivedHash === recalculatedHash;
+  if (receivedHash === recalculatedHash) {
+    const [anweshaId, firstName, lastName, email, contact, college, dob, gender] = originalData.split("|");
+    return { anweshaId, firstName, lastName, email, contact, college, dob, gender };
+  }
+  return false;
 };
