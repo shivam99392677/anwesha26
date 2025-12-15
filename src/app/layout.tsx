@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthUserProvider } from "@/context/AuthUserContext";
+import { CartProvider  } from "@/context/CartContext";
 import Navbar from "@/components/navbar/Navbar";
 import { Toaster } from "react-hot-toast";
 import Footer from "@/components/Footer/Footer";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +34,19 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthUserProvider>
+          <CartProvider >
           <Navbar />
           {children}
           <Toaster position="top-right" reverseOrder={false} />
           <Footer />
+          </CartProvider>
         </AuthUserProvider>
+
+        {/* 🔥 Razorpay SDK Must Be Here */}
+        <Script 
+          src="https://checkout.razorpay.com/v1/checkout.js" 
+          strategy="lazyOnload" 
+        />
 
       </body>
     </html>

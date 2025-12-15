@@ -34,7 +34,7 @@ export function AuthUserProvider({ children }) {
       } else {
         // fallback minimal user (should not normally happen)
         setCurrentUser({
-          uid: user.uid,
+          uid: currentUser?.uid || (auth.currentUser?.uid ?? null),
           email: user.email,
           role: "user",
           emailVerified: user.emailVerified,

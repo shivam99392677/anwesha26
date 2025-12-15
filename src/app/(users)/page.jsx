@@ -325,7 +325,7 @@ const EventSlider = ({
             imageRefs.current[
                 prevprev
             ].current.style.transform = `translateY(-50%) translateX(calc(-50% - ${2 * offset
-                }px))`
+            }px))`
             imageRefs.current[prev].current.style.zIndex = '2'
             imageRefs.current[
                 prev
@@ -342,7 +342,7 @@ const EventSlider = ({
             imageRefs.current[
                 nextnext
             ].current.style.transform = `translateY(-50%) translateX(calc(-50% + ${2 * offset
-                }px))`
+            }px))`
         } else if (
             currIndex === oldIndex - 1 ||
             (currIndex === images.length - 1 && oldIndex === 0)
@@ -352,7 +352,7 @@ const EventSlider = ({
             imageRefs.current[
                 prevprev
             ].current.style.transform = `translateY(-50%) translateX(calc(-50% - ${2 * offset
-                }px))`
+            }px))`
             imageRefs.current[prev].current.style.zIndex = '2'
             imageRefs.current[
                 prev
@@ -369,7 +369,7 @@ const EventSlider = ({
             imageRefs.current[
                 nextnext
             ].current.style.transform = `translateY(-50%) translateX(calc(-50% + ${2 * offset
-                }px))`
+            }px))`
             imageRefs.current[nextnextnext].current.style.zIndex = '-1'
         }
         setOldIndex(currIndex)
@@ -524,12 +524,12 @@ const ImagesSlider = ({
             imageRefs[
                 prevprevprev
             ].current.style.transform = `translateX(calc(-50% + ${3 * offset
-                }px))`
+            }px))`
             imageRefs[prevprev].current.style.zIndex = '4'
             imageRefs[
                 prevprev
             ].current.style.transform = `translateX(calc(-50% - ${2 * offset
-                }px))`
+            }px))`
             imageRefs[prev].current.style.zIndex = '3'
             imageRefs[
                 prev
@@ -546,7 +546,7 @@ const ImagesSlider = ({
             imageRefs[
                 nextnext
             ].current.style.transform = `translateX(calc(-50% + ${2 * offset
-                }px))`
+            }px))`
         } else if (
             currIndex === oldIndex - 1 ||
             (currIndex === images.length - 1 && oldIndex === 0)
@@ -556,7 +556,7 @@ const ImagesSlider = ({
             imageRefs[
                 prevprev
             ].current.style.transform = `translateX(calc(-50% - ${2 * offset
-                }px))`
+            }px))`
             imageRefs[prev].current.style.zIndex = '2'
             imageRefs[
                 prev
@@ -573,12 +573,12 @@ const ImagesSlider = ({
             imageRefs[
                 nextnext
             ].current.style.transform = `translateX(calc(-50% + ${2 * offset
-                }px))`
+            }px))`
             imageRefs[nextnextnext].current.style.zIndex = '-1'
             imageRefs[
                 nextnextnext
             ].current.style.transform = `translateX(calc(-50% - ${3 * offset
-                }px))`
+            }px))`
         }
         setOldIndex(currIndex)
     }, [currIndex])
@@ -1011,12 +1011,20 @@ const Home = () => {
                                 {/* <div className={styles.tshirt_blue} /> */}
                             </div>
                             <div className={styles.merch_button}>
-                                <button
+                                {/* <button
                                     className={styles.sexy_button}
                                     onClick={() =>
                                         window.open(
                                             'https://docs.google.com/forms/d/1B6yMQs6Y8UV5GDrnxYipGIrDWCY4mcZZvPVboi5Q1nU/edit'
                                         )
+                                    }
+                                >
+                                    GRAB NOW
+                                </button> */}
+
+                                                                <button
+                                    className={styles.sexy_button}
+                                    onClick={()=>{router.push('/store')}
                                     }
                                 >
                                     GRAB NOW
@@ -1163,6 +1171,43 @@ const Home = () => {
                                     )}
                                     onClick={() => {
                                         router.push('/register')
+                                    }}
+                                >
+                                    REGISTER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                {/* campus ambassador  */}
+                {/* CTA or This Year's Theme */}
+                <section className={styles.cta}>
+                    <div className={styles.sexy_title}>
+                        <h2>Campus Ambassador</h2>
+                    </div>
+                    <div className={styles.cta_body}>
+                        <div className={styles.cta_body_left}>
+                            <GreenCircle />
+                            <div className={styles.cta_image}>
+                                <Image
+                                    src={'/cahome1.png'}
+                                    width={474.386}
+                                    height={474.386}
+                                    alt="ca.png"
+                                />
+                            </div>
+                        </div>
+                        <div className={styles.cta_body_right}>
+                            <p> Meet <span>Nova</span>, your gateway to impact and leadership! As a Campus Ambassador, Nova connects energetic minds, sparks creativity, and builds bridges between opportunities and students. Step into Nova’s world and become the driving force behind events, outreach, and campus innovation.<br /><br /> Join Nova on this exciting journey — unleash your influence, grow your network, and represent your campus like a champ! </p>
+
+                            <div className={styles.cta_button}>
+                                <button
+                                    className={cn(
+                                        styles.sexy_button,
+                                        styles.sexy_button_small
+                                    )}
+                                    onClick={() => {
+                                        router.push('/campus-ambassador')
                                     }}
                                 >
                                     REGISTER
