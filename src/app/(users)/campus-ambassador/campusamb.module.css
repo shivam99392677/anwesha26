@@ -16,7 +16,7 @@
   /* background-position: center; */
   /* width: 100vw; */
   min-height: 270px;
-  height: 100vh;
+  height: 100svh;
   display: flex;
   justify-content: end;
   font-size: 30px;
@@ -29,7 +29,7 @@
   display: flex;
   /* align-items: center; */
   height: 54vh;
-  width: 102vw;
+  width: 100%;
   /* position: absolute; */
   top: 45%;
   align-content: center;

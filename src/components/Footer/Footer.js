@@ -3,7 +3,8 @@ import Image from 'next/image'
 import styles from './Footer.module.css'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-
+import { usePathname } from 'next/navigation'
+import clsx from "clsx";
 // TO USE More Classes => {cn(className1, className2, className3)}
 const cn = (...classes) => {
     return classes.filter(Boolean).join(' ')
@@ -11,10 +12,12 @@ const cn = (...classes) => {
 // assets path => '/pics/footer/{name}'
 
 const Footer = () => {
+
+    const isCA_page = usePathname() === "/campus-ambassador"
     const router = useRouter();
     return (
         <section>
-            <div className={styles.footer}>
+         <div className={clsx(styles.footer, isCA_page && "w-[100vw]")}>
                 <div className={styles.footer_upper}>
                     <div className={styles.foter_logo}>
                         <Image

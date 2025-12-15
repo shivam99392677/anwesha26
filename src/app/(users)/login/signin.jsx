@@ -66,9 +66,9 @@ export default function Signin() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[100vh] bg-[url('/tajmahal_bg.jpg')] bg-cover bg-center px-6">
+    <div className="flex font-[SF_Ironside] tracking-widest bg-[url('/pics/registerBg.jpg')]  items-center justify-center min-h-[100vh] bg-cover bg-center px-2 sm:px-5">
       <div className="rounded-3xl shadow-2xl border border-white p-10 w-full max-w-md bg-white/80 text-center animate-fade-in">
-        <h3 className="text-5xl font-extrabold mb-8">Welcome Back</h3>
+        <h3 className="text-5xl text-slate-800 font-extrabold mb-8">Welcome Back</h3>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {/* EMAIL FIELD */}
@@ -111,7 +111,7 @@ export default function Signin() {
           <button
             type="submit"
             disabled={isDisabled}
-            className="w-full text-2xl tracking-widest bg-[url('/bg_2_cropped.jpg')] bg-cover bg-bottom rounded-xl text-white py-2 hover:scale-102 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full text-2xl cursor-pointer tracking-widest bg-[url('/bg_2_cropped.jpg')] bg-cover bg-bottom rounded-xl text-white py-2 hover:scale-102 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isDisabled ? "Signing In..." : "Sign In"}
           </button>
