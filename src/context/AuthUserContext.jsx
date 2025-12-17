@@ -10,12 +10,32 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 const AuthContext = createContext();
 
 export function AuthUserProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // to search by anwesha id
+  const searchByAnweshaId = async (anweshaId) => {
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("anweshaId", "==", anweshaId)
+      );
+
+      const snap = await getDocs(q);
+
+      if (snap.empty) return null;
+
+      return snap.docs[0].data();
+    } catch (err) {
+      console.error("Search by Anwesha ID failed:", err);
+      return null;
+    }
+  };
 
   // 🔹 Listen for login/logout state
   useEffect(() => {
@@ -162,6 +182,7 @@ export function AuthUserProvider({ children }) {
         logoutUser,
         updateUser,
         finalizeRegistration,
+        searchByAnweshaId,
         loading,
       }}
     >
