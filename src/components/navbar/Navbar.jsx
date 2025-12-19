@@ -117,6 +117,7 @@ function Navigation() {
             <li><Link className={styles.linknav} href="/about">About</Link></li>
             <li><Link className={styles.linknav} href="/contact">Contact</Link></li>
             <li><Link className={styles.linknav} href="/campus-ambassador">Campus Ambassador</Link></li>
+            <li><Link className={styles.linknav} href="/store">Store</Link></li>
           </ul>
         </div>
 
@@ -176,6 +177,17 @@ function Navigation() {
                       }}
                     >
                       Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/orders");
+                      }}
+                    >
+                     Orders
                     </button>
                   </li>
 
@@ -280,6 +292,17 @@ function Navigation() {
                       Profile
                     </button>
                   </li>
+                  <li>
+                    <button
+                      className="w-full px-4 py-2 text-left bg-gray-800 hover:bg-gray-600 rounded-xl"
+                      onClick={() => {
+                        setShowDropdown(false);
+                        router.push("/orders");
+                      }}
+                    >
+                      Orders
+                    </button>
+                  </li>
 
                   {/* ADMIN */}
                   {currentUser?.role === "admin" && (
@@ -350,19 +373,21 @@ function Navigation() {
           <li><Link href="/sponsors" onClick={toggleDrawer}>Sponsors</Link></li>
           <li><Link href="/about" onClick={toggleDrawer}>About</Link></li>
           <li><Link href="/contact" onClick={toggleDrawer}>Contact</Link></li>
+          <li><Link href="/campus-ambassador" onClick={toggleDrawer}>Campus Ambassador</Link></li>
+          <li><Link href="/store" onClick={toggleDrawer}>Store</Link></li>
           <li><Link href="/anweshapass" onClick={toggleDrawer}>Get Passes</Link></li>
 
           {!currentUser && (
             <li><Link href="/login" onClick={toggleDrawer}>Login</Link></li>
           )}
 
-          {currentUser && (
+          {/* {currentUser && (
             <li>
               <button onClick={handleLogout} className="text-red-500">
                 Logout
               </button>
             </li>
-          )}
+          )} */}
         </ul>
       </div>
     </>

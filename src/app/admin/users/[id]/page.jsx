@@ -30,8 +30,8 @@ export default function EditUserPage({ params }) {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setFormData({
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
+            firstName: data.personal.firstName || '',
+            lastName: data.personal.lastName || '',
             email: data.email || '',
             anweshaId: data.anweshaId || '',
             role: data.role || 'user',
@@ -156,8 +156,8 @@ export default function EditUserPage({ params }) {
                     >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
-                        <option value="coordinator">Coordinator</option>
-                        <option value="campus_ambassador">Campus Ambassador</option>
+                        <option value="editor">Editor</option>
+                        {/* <option value="campus_ambassador">Campus Ambassador</option> */}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>

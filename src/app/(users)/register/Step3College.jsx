@@ -51,13 +51,13 @@ export default function Step3({ next }) {
   }
 
   return (
-    <div className="flex items-center justify-center mb-14 px-2">
-      <div className="rounded-3xl shadow-2xl border p-10 w-full max-w-lg 
+    <div className="flex items-center justify-center  mb-14 px-2">
+      <div className=" w-[84vw] md:w-full rounded-3xl shadow-2xl border p-10 
                       backdrop-blur-lg text-center bg-white/80 animate-fade-in">
         
         {/* Heading */}
         <h3 className="text-5xl font-extrabold mb-9 text-[#433D7F]">
-          Step 3: College Details
+          College Details
         </h3>
 
         {/* Form */}
